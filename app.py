@@ -2,45 +2,39 @@
  "cells": [
   {
    "cell_type": "code",
-   "execution_count": 88,
+   "execution_count": 90,
    "id": "4118c85f-9a40-47b9-a64a-d1dc88f2d428",
    "metadata": {},
    "outputs": [
     {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "🛒 Product Recommendation System \n"
-     ]
-    },
-    {
-     "name": "stdin",
-     "output_type": "stream",
-     "text": [
-      "Enter your preference (e.g., phone under $500):  phone under $700\n"
-     ]
-    },
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "\n",
-      "Recommendation Result:\n",
-      "[{'id': 2, 'name': 'Samsung Galaxy A54', 'price': 449, 'category': 'phone', 'link': 'https://www.samsung.com/galaxy-a54/'}, {'id': 3, 'name': 'Google Pixel 7', 'price': 599, 'category': 'phone', 'link': 'https://store.google.com/product/pixel_7'}]\n"
+     "ename": "ModuleNotFoundError",
+     "evalue": "No module named 'mangum'",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[1;31mModuleNotFoundError\u001b[0m                       Traceback (most recent call last)",
+      "Cell \u001b[1;32mIn[90], line 2\u001b[0m\n\u001b[0;32m      1\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m \u001b[38;5;21;01mfastapi\u001b[39;00m \u001b[38;5;28;01mimport\u001b[39;00m FastAPI\n\u001b[1;32m----> 2\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m \u001b[38;5;21;01mmangum\u001b[39;00m \u001b[38;5;28;01mimport\u001b[39;00m Mangum\n\u001b[0;32m      3\u001b[0m \u001b[38;5;28;01mimport\u001b[39;00m \u001b[38;5;21;01mjson\u001b[39;00m\n\u001b[0;32m      4\u001b[0m \u001b[38;5;28;01mimport\u001b[39;00m \u001b[38;5;21;01mos\u001b[39;00m\n",
+      "\u001b[1;31mModuleNotFoundError\u001b[0m: No module named 'mangum'"
      ]
     }
    ],
    "source": [
+    "from fastapi import FastAPI\n",
+    "from mangum import Mangum\n",
     "import json\n",
     "import os\n",
     "import re\n",
     "from openai import OpenAI, OpenAIError\n",
     "\n",
+    "app = FastAPI()\n",
+    "\n",
     "# ----------------------------------\n",
     "# CONFIG\n",
     "# ----------------------------------\n",
-    "api_key = os.getenv(\"OPENAI_API_KEY\",\n",
-    "                    \"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\")\n",
+    "api_key = os.getenv(\n",
+    "    \"OPENAI_API_KEY\",\n",
+    "    \"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\"\n",
+    ")\n",
     "\n",
     "client = OpenAI(api_key=api_key)\n",
     "\n",
@@ -62,7 +56,7 @@
     "\n",
     "\n",
     "# ----------------------------------\n",
-    "# FALLBACK RECOMMENDATION (NO AI)\n",
+    "# FALLBACK RECOMMENDATION (NO OPENAI)\n",
     "# ----------------------------------\n",
     "def fallback_recommendation(user_input):\n",
     "    user_input_lower = user_input.lower()\n",
@@ -72,8 +66,7 @@
     "    max_price = int(price_match[0].replace('$', '')) if price_match else None\n",
     "\n",
     "    for p in products:\n",
-    "        category_match = any(cat in user_input_lower for cat in [\"phone\", \"laptop\", \"tablet\"])\n",
-    "        if category_match and p[\"category\"] in user_input_lower:\n",
+    "        if p[\"category\"] in user_input_lower:\n",
     "            if max_price:\n",
     "                if p[\"price\"] <= max_price:\n",
     "                    fallback.append(p)\n",
@@ -83,11 +76,11 @@
     "\n",
     "\n",
     "# ----------------------------------\n",
-    "# MAIN FUNCTION (NO STREAMLIT)\n",
+    "# MAIN RECOMMENDER\n",
     "# ----------------------------------\n",
     "def get_recommendation(user_input):\n",
     "    if not user_input.strip():\n",
-    "        return \"Please enter your product preference.\"\n",
+    "        return {\"error\": \"Please enter your product preference.\"}\n",
     "\n",
     "    prompt = f\"\"\"\n",
     "You are a product recommendation AI.\n",
@@ -114,25 +107,25 @@
     "        try:\n",
     "            recommended_ids = json.loads(ai_reply)\n",
     "            recommended_products = [p for p in products if p[\"id\"] in recommended_ids]\n",
-    "\n",
     "            return recommended_products\n",
     "\n",
     "        except json.JSONDecodeError:\n",
-    "            return f\"AI did not return valid JSON. Raw output:\\n{ai_reply}\"\n",
+    "            return {\"error\": \"Invalid JSON from AI\", \"raw\": ai_reply}\n",
     "\n",
     "    except OpenAIError:\n",
     "        return fallback_recommendation(user_input)\n",
     "\n",
     "\n",
     "# ----------------------------------\n",
-    "# COMMAND-LINE USE\n",
+    "# FASTAPI ROUTE\n",
     "# ----------------------------------\n",
-    "if __name__ == \"__main__\":\n",
-    "    print(\"🛒 Product Recommendation System \")\n",
-    "    user_input = input(\"Enter your preference (e.g., phone under $500): \")\n",
-    "    result = get_recommendation(user_input)\n",
-    "    print(\"\\nRecommendation Result:\")\n",
-    "    print(result)\n"
+    "@app.get(\"/recommend\")\n",
+    "def recommend(q: str):\n",
+    "    return {\"result\": get_recommendation(q)}\n",
+    "\n",
+    "\n",
+    "# Needed for Vercel\n",
+    "handler = Mangum(app)\n"
    ]
   },
   {
