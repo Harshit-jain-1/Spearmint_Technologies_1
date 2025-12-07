@@ -39,7 +39,7 @@
     "# -------------------------------\n",
     "# CONFIG\n",
     "# -------------------------------\n",
-    "api_key = os.getenv(\"OPENAI_API_KEY\", \"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\") \n",
+    "api_key = os.getenv(\"OPENAI_API_KEY\") \n",
     "client = OpenAI(api_key=api_key)\n",
     "\n",
     "# -------------------------------\n",
